@@ -1,88 +1,91 @@
 package generators
 
-import stdx.effect.Command
 import std.collection.ArrayList
+import effects
 
-class Yield<Element> <: Command<Unit> {
+interface Default {
+    static func default() : Default
+}
+
+class Yield<Element> <: effects.Command<Unit> {
     Yield(let elem: Element) {}
+    public func defaultImpl() {
+        eprintln("non-handled yield")
+    }
 }
 
 public func yield<T>(element: T) {
-    perform Yield<T>(element)
+    effects.perform(Yield<T>(element))
 }
 
 public class Generator<Element> {
     public Generator(let f: () -> Unit) {}
     
-    public func collect(): ArrayList<Element>() {
+    public func collect(): ArrayList<Element> {
         let collection = ArrayList<Element>()
-        try {
+        effects.try_ {
             f()
-        } handle (y: Yield<Element>) {
+        } .handle { y: Yield<Element> =>
             collection.add(y.elem)
-            resume
-        }
+        }.then_finally {}
         return collection
     }
     
     public func filter(condition: (Element) -> Bool): Generator<Element> {
         return Generator {
-            try {
+            effects.try_ {
                 f()
-            } handle (y: Yield<Element>) {
+            } .handle { y: Yield<Element> =>
                 if (condition(y.elem)) {
                     yield(y.elem)
                 }
-                resume
-            }
+            }.then_finally {}
         }
     }
     
     public func map<Output>(transform: (Element) -> Output): Generator<Output> {
         return Generator {
-            try {
+            effects.try_ {
                 f()
-            } handle (y: Yield<Element>) {
+            } .handle { y: Yield<Element> =>
                 yield(transform(y.elem))
-                resume
-            }
+            }.then_finally {}
         }
     }
     
     public func filter_map<Output>(transform: (Element) -> Option<Output>): Generator<Output> {
         return Generator {
-            try {
+            effects.try_ {
                  f()
-            } handle (y: Yield<Element>) {
+            } .handle { y: Yield<Element> =>
                 if (let Some(t) <- transform(y.elem)) {
                     yield(t)
                 }
-                resume
-            }
+            } .then_finally {}
         }
     }
 
     public func fold<Output>(initial: Output, reducer: (Element, Output) -> Output): Output {
         let accumulator = Box(initial)
-        try {
+        effects.try_ {
             f()
-        } handle (y: Yield<Element>) {
+        } .handle { y: Yield<Element> =>
             accumulator.value = reducer(y.elem, accumulator.value)
-            resume
-        }
+            return
+        } .then_finally {}
         return accumulator.value
     }
 
     public func take(amount: Int64): Generator<Element> {
         Generator<Element> {
             let amount_left = Box(amount)
-            try {
+            effects.try_ {
                 f()
-            } handle (y: Yield<Element>) {
+            } .handle { y: Yield<Element> =>
                 yield<Element>(y.elem)
                 amount_left.value--
                 if (amount_left.value > 0) {
-                    resume
+                    return
                 }
             }
         }
@@ -95,4 +98,11 @@ public func range(start: Int64, end: Int64): Generator<Int64> {
             yield(x)
         }
     }
+}
+
+main() {
+    println("hello")
+
+    println(range(1, 8000).iterator().max())
+    return
 }

@@ -5,14 +5,19 @@
   version = "1.0.0"
   target-dir = ""
   src-dir = ""
-  output-type = "static"
-  compile-option = "--experimental --enable-eh"
+  output-type = "executable"
+  compile-option = ""
   override-compile-option = ""
   link-option = ""
   package-configuration = {}
 
 [dependencies]
+  effects = { git = "https://github.com/Huawei-Edinburgh-Programming-Languages/effects-alt-syntax.git", branch = "deferred-resumption" }
 
 # [target.x86_64-unknown-linux-gnu]
-  # [target.x86_64-unknown-linux-gnu.bin-dependencies]
-    # path-option = ["${CANGJIE_HOME}"]
+#   [target.x86_64-unknown-linux-gnu.bin-dependencies]
+#     path-option = ["${CANGJIE_HOME}"]
+
+# [target.aarch64-apple-darwin]
+#   [target.aarch64-apple-darwin.bin-dependencies]
+#     path-option = [ "${CANGJIE_STDX_PATH}/darwin_aarch64_cjnative/dynamic/stdx" ]
