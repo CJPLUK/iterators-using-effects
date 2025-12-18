@@ -3,10 +3,6 @@ package generators
 import std.collection.ArrayList
 import effects
 
-interface Default {
-    static func default() : Default
-}
-
 class Yield<Element> <: effects.Command<Unit> {
     Yield(let elem: Element) {}
     public func defaultImpl() {
@@ -27,7 +23,7 @@ public class Generator<Element> {
             f()
         } .handle { y: Yield<Element> =>
             collection.add(y.elem)
-        }.then_finally {}
+        } .then_finally {}
         return collection
     }
     
@@ -39,7 +35,7 @@ public class Generator<Element> {
                 if (condition(y.elem)) {
                     yield(y.elem)
                 }
-            }.then_finally {}
+            } .then_finally {}
         }
     }
     
@@ -49,7 +45,7 @@ public class Generator<Element> {
                 f()
             } .handle { y: Yield<Element> =>
                 yield(transform(y.elem))
-            }.then_finally {}
+            } .then_finally {}
         }
     }
     
@@ -75,26 +71,11 @@ public class Generator<Element> {
         } .then_finally {}
         return accumulator.value
     }
-
-    public func take(amount: Int64): Generator<Element> {
-        Generator<Element> {
-            let amount_left = Box(amount)
-            effects.try_ {
-                f()
-            } .handle { y: Yield<Element> =>
-                yield<Element>(y.elem)
-                amount_left.value--
-                if (amount_left.value > 0) {
-                    return
-                }
-            }
-        }
-    }
 }
 
-public func range(start: Int64, end: Int64): Generator<Int64> {
+public func range_generator(start: Int64, end: Int64): Generator<Int64> {
     return Generator<Int64> {
-        for (x in start..end) {
+        for (x in start..=end) {
             yield(x)
         }
     }
@@ -103,6 +84,7 @@ public func range(start: Int64, end: Int64): Generator<Int64> {
 main() {
     println("hello")
 
-    println(range(1, 8000).iterator().max())
-    return
+    for (x in range_generator(1, 20) where x%2 == 0) { // Makes use of the `Iterable` interface
+        println(x)
+    }
 }
